@@ -24,7 +24,7 @@ create a CNN and set pNet as its handler
 upon successfully finishing this function call, pNet will point to a functional sod_cnn
 */
 
-static TEE_Result create_cnn(sod_cnn **pNet) {
+static TEE_Result (sod_cnn **pNet) {
 	TEE_Result rc = TEE_ERROR_GENERIC;
 	TEE_ObjectHandle object;
 	TEE_ObjectInfo object_info;
@@ -169,7 +169,7 @@ static TEE_Result cmd_exec(uint32_t types,
 	// create CNN if it doesn't exist
 	if (!pNet) {
 		// the third parameter should be char **
-		rc = sod_cnn_create(&pNet, ":face", &cnn_buffer, &zErr);
+		rc = sod_cnn_create(&pNet, ":face", &cnn_buffer, &zErr);			/////////// I THINK I WROTE BY ACCIDENT
 		if (rc != SOD_OK) {
 			EMSG("Can't create cnn, check if parameters are valid");
 			rc = TEE_ERROR_GENERIC;
@@ -228,7 +228,32 @@ static TEE_Result cmd_load(uint32_t types,
 	cnn_buffer = decrypt(cnn_buffer_sec)
 	create_cnn(pNet, cnn_buffer)
 	*/
-
+	////////// I WROTE START
+	rc = decrypt(key, iv, cnn_buffer_sec, cnn_size_sec, cnn_buffer_ptr, &cnn_size);
+	//const char *zErr;
+	// create CNN if it doesn't exist
+	if (rc != TEE_SUCCESS){
+		EMSG("Decrypting the CNN parameters in 'cnn_buffer_sec' to 'cnn_buffer' failed");
+		return rc;
+	}
+	const char *zErr;
+	/*
+	if (!pNet){
+		rc = create_cnn(&pNet);
+	}
+	*/
+	
+	if (!pNet) {
+		// the third parameter should be char **
+		rc = sod_cnn_create(&pNet, ":face", &cnn_buffer_ptr, &zErr);
+	//	rc = create_cnn(&pNet, ":face", &cnn_buffer, &zErr);
+		if (rc != SOD_OK) {
+			EMSG("Can't create cnn, check if parameters are valid");
+			rc = TEE_ERROR_GENERIC;
+			return rc;
+		}
+	}
+///// I WROTE END
 	/* it's not necessary to change the following block, but you can if needed */
 	// save the decrypted parameter `cnn_buffer` as a TEE persistent object
 	TEE_ObjectHandle object;
@@ -303,6 +328,22 @@ static TEE_Result cmd_detect(uint32_t types,
 	/* TODO: decrypt the image buffer `img_buffer_sec` to `img_buffer`
 	img_buffer = decrypt(img_buffer_sec)
 	*/
+
+	// I WROTE START
+
+	rc = decrypt(key, iv, img_buffer_sec, img_size_sec, img_buffer, &img_size);
+	if (rc != TEE_SUCCESS){
+		EMSG("Decrypting image buffer img buffer sec to img buffer");
+		return rc;
+	}
+
+
+/// I WROTE END
+
+
+
+
+
 	
 	/* it's not necessary to change the following block, but you can if needed */
 	// create CNN
@@ -319,6 +360,19 @@ static TEE_Result cmd_detect(uint32_t types,
 	/* TODO: encrypt the output image `img_out`
 	img_buffer = encrypt(img_out)	
 	*/	
+
+	// I WROTE START
+	rc = encrypt(key, iv, img_out, img_out_size, img_buffer, &img_size);
+	if (rc != TEE_SUCCESS){
+		EMSG("Encrypting output image failed");
+		return rc;
+	}
+
+
+
+
+
+
 	
 	/* it's not necessary to change the following block, but you can if needed */
 	// check if the output buffer is large enough
@@ -378,11 +432,11 @@ TEE_Result TA_InvokeCommandEntryPoint(void __unused *session,
 		return cmd_exec(param_types, params);
 	case TA_CNN_CMD_LOAD:
 		/* TODO: execute load CNN command */
-	
+		return cmd_load(param_types, params);												////////////// I WROTE
 		
 	case TA_CNN_CMD_DETECT:
 		/* TODO: execute load image and detect face command */
-	
+		return cmd_detect(param_types, params);												/////////////// I WROTE
 		
 	default:
 		EMSG("Command ID 0x%x is not supported", cmd);
